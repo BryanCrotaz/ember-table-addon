@@ -115,6 +115,40 @@ StyleBindingsMixin, ResizeHandlerMixin, {
 
   columnsFillTable: true,
 
+  _content: function(key, value) {
+    if (arguments.length > 1) {
+      // > 1 args = this is a `set`
+      return value;
+    } else {
+      // otherwise this is a `get`
+      var self = this;
+      value = null;
+
+      var content = this.get('content');
+      if (content.then)
+      {
+        // content is a promise
+        content.then(function(resolvedContent) {
+          // when the promise is resolved, set this property with the value
+          self.set("_content", resolvedContent);
+
+          // if the promise resolves immediately, set `value` so we return
+          // the resolved value and not null
+          value = resolvedContent;
+        });
+
+        // returns null if the promise doesn't resolve immediately, or 
+        // the resolved value if it's ready
+        return value;
+      }
+      else
+      {
+        // content is not a promise
+        return content;
+      }
+    }
+  }.property('content'),
+
   init: function() {
     this._super();
     if (!Ember.$.ui) {
@@ -158,9 +192,9 @@ StyleBindingsMixin, ResizeHandlerMixin, {
       parentController: this,
       container: this.get('container'),
       itemController: Row,
-      content: this.get('content')
+      content: this.get('_content')
     });
-  }).property('content.[]'),
+  }).property('_content.[]'),
 
   // An array of Ember.Table.Row
   footerContent: Ember.computed(function(key, value) {
